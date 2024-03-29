@@ -1,12 +1,35 @@
 import numpy as np
+from enum import Enum
+
+class Optimizer(Enum):
+    SGD=1
+    Adam=2
+    IWLS=3
 class LogisticRegression:
-    def __init__(self, noOfIterations, learningRate):
+    def __init__(self, noOfIterations: int=1000, learningRate: float=0.001, optimizer: Optimizer=Optimizer.SGD):
         self.w= []
         self.noOfIterations = noOfIterations
         self.learningRate = learningRate
         self.costs=[]
+        self.optimizer = optimizer
         
     def fit(self,X,y):
+        match self.optimizer:
+            case Optimizer.SGD:
+                self.fitSGD(X,y)
+            
+    def predict(self,X):
+        predicted  = 1/(1+np.exp(-(np.dot(X,self.w).astype(float) +self.bias)).astype(float))
+        predictedClasses = []
+        for x in predicted:
+            if x>0.5:
+                predictedClasses.append(1)
+            else:
+                predictedClasses.append(0)
+
+        return predictedClasses
+    
+    def fitSGD(self, X,y):
         self.w = np.zeros(X.shape[1])
         self.bias=0
         self.costs=[]
@@ -25,15 +48,3 @@ class LogisticRegression:
 
             self.w = self.w+self.learningRate*weightChange
             self.bias=self.bias+self.learningRate*biasChange
-            
-
-    def predict(self,X):
-        predicted  = 1/(1+np.exp(-(np.dot(X,self.w).astype(float) +self.bias)).astype(float))
-        predictedClasses = []
-        for x in predicted:
-            if x>0.5:
-                predictedClasses.append(1)
-            else:
-                predictedClasses.append(0)
-
-        return predictedClasses
