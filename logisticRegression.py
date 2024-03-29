@@ -16,7 +16,7 @@ class LogisticRegression:
     def fit(self,X,y):
         match self.optimizer:
             case Optimizer.SGD:
-                self.fitSGD(X,y)
+                self.fitSgd(X,y)
             
     def predict(self,X):
         predicted  = 1/(1+np.exp(-(np.dot(X,self.w).astype(float) +self.bias)).astype(float))
@@ -29,7 +29,7 @@ class LogisticRegression:
 
         return predictedClasses
     
-    def fitSGD(self, X,y):
+    def fitSgd(self, X,y):
         self.w = np.zeros(X.shape[1])
         self.bias=0
         self.costs=[]
@@ -48,3 +48,27 @@ class LogisticRegression:
 
             self.w = self.w+self.learningRate*weightChange
             self.bias=self.bias+self.learningRate*biasChange
+    def fitAdam(self,X,y):
+        self.w = np.zeros(X.shape[1])
+        self.bias=0
+        self.costs=[]
+        # Values used by TensorFlow: beta1=0.9, beta2=0.999, epsilon=1e-08
+        beta1=0.9
+        beta2=0.999
+        epsilon=1e-08
+        moment1=0
+        moment2=0
+        mhat=0
+        vhat=0
+        m = np.zeros(X.shape[0])
+        for i in range(self.noOfIterations):
+            
+            a = np.dot(X,self.w) +self.bias
+            a=a.astype(float)
+            yHat=1/(1+np.exp(-a))
+
+            da = a-y
+            weightChange = X.transpose().dot(da)
+            biasChange = da.sum()
+
+            moment1=beta1*m+(1-beta1)
