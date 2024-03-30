@@ -17,6 +17,8 @@ class LogisticRegression:
         match self.optimizer:
             case Optimizer.SGD:
                 self.fitSgd(X,y)
+            case Optimizer.Adam:
+                self.fitAdam(X,y)
             
     def predict(self,X):
         predicted  = 1/(1+np.exp(-(np.dot(X,self.w).astype(float) +self.bias)).astype(float))
@@ -30,6 +32,7 @@ class LogisticRegression:
         return predictedClasses
     
     def fitSgd(self, X,y):
+        # Initializing with weights 0 and 0 bias
         self.w = np.zeros(X.shape[1])
         self.bias=0
         self.costs=[]
@@ -40,7 +43,7 @@ class LogisticRegression:
             yHat=1/(1+np.exp(-a))
 
             # cost function (cross entropy loss)
-            self.costs.append((-1/X.shape[0])*(np.dot(y,yHat)+np.dot((1-y),np.log(1-yHat))))
+            self.costs.append((-1/X.shape[0])*(np.dot(y,np.log(yHat))+np.dot((1-y),np.log(1-yHat))))
             
             # update weights
             weightChange = (1/X.shape[0])*np.dot(X.T,(yHat-y))
@@ -49,6 +52,12 @@ class LogisticRegression:
             self.w = self.w+self.learningRate*weightChange
             self.bias=self.bias+self.learningRate*biasChange
     def fitAdam(self,X,y):
+
+        # 1. Init values
+        # 2. Compute Gradients
+        # 3. Get first and second moments
+        # 4. Calculate bias corrections
+        # 5. update weights
         self.w = np.zeros(X.shape[1])
         self.bias=0
         self.costs=[]
@@ -56,19 +65,38 @@ class LogisticRegression:
         beta1=0.9
         beta2=0.999
         epsilon=1e-08
-        moment1=0
-        moment2=0
+        moment1Weights=np.zeros(X.shape[1])
+        moment2Weights=np.zeros(X.shape[1])
+        moment1Bias=0
+        moment2Bias=0
         mhat=0
         vhat=0
-        m = np.zeros(X.shape[0])
+        
         for i in range(self.noOfIterations):
             
             a = np.dot(X,self.w) +self.bias
             a=a.astype(float)
             yHat=1/(1+np.exp(-a))
 
-            da = a-y
-            weightChange = X.transpose().dot(da)
-            biasChange = da.sum()
+            # cost function (cross entropy loss)
+            self.costs.append((-1/X.shape[0])*(np.dot(y,np.log(yHat))+np.dot((1-y),np.log(1-yHat))))
+            
 
-            moment1=beta1*m+(1-beta1)
+            # TODO: Calculate gradient of cross entropy with respect to weights and bias
+            gradient=np.sum(yHat-y)
+            moment1Weights=beta1*moment1Weights+(1-beta1)*gradient
+            moment2Weights=beta2*moment2Weights+(1-beta2)*gradient*gradient
+
+            mhatWeights = moment1Weights/(1-beta1**i)
+            vhatWeights = moment2Weights/(1-beta2**i)
+
+            self.w = self.w-self.learningRate*mhatWeights/(np.sqrt(vhatWeights)+epsilon)
+
+            moment1Bias=beta1*moment1Bias+(1-beta1)*gradient
+            moment2Bias=beta2*moment2Bias+(1-beta2)*gradient*gradient
+
+            mhatBias = moment1Bias/(1-beta1**i)
+            vhatBias = moment2Bias/(1-beta2**i)
+
+            self.bias = self.bias-self.learningRate*mhatBias/(np.sqrt(vhatBias)+epsilon)
+            
