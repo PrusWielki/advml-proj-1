@@ -81,22 +81,27 @@ class LogisticRegression:
             # cost function (cross entropy loss)
             self.costs.append((-1/X.shape[0])*(np.dot(y,np.log(yHat))+np.dot((1-y),np.log(1-yHat))))
             
-
-            # TODO: Calculate gradient of cross entropy with respect to weights and bias
-            gradient=np.sum(yHat-y)
-            moment1Weights=beta1*moment1Weights+(1-beta1)*gradient
-            moment2Weights=beta2*moment2Weights+(1-beta2)*gradient*gradient
+            # Calculate gradient of cross entropy with respect to weights and bias
+            # From what I understand the gradient is simply y predicted - y but in this article https://medium.com/analytics-vidhya/implementing-logistic-regression-with-sgd-from-scratch-5e46c1c54c35
+            # they claim that gradient with respect to weights should be x(y-y_pred) and with respect to bias: y- ypred
+            gradientWithRespectToWeights=np.dot(X.T,yHat-y)
+            gradientWithRespectToBias = yHat-y
+            moment1Weights=beta1*moment1Weights+(1-beta1)*gradientWithRespectToWeights
+            moment2Weights=beta2*moment2Weights+(1-beta2)*gradientWithRespectToWeights*gradientWithRespectToWeights
 
             mhatWeights = moment1Weights/(1-beta1**i)
             vhatWeights = moment2Weights/(1-beta2**i)
 
             self.w = self.w-self.learningRate*mhatWeights/(np.sqrt(vhatWeights)+epsilon)
 
-            moment1Bias=beta1*moment1Bias+(1-beta1)*gradient
-            moment2Bias=beta2*moment2Bias+(1-beta2)*gradient*gradient
+            moment1Bias=beta1*moment1Bias+(1-beta1)*gradientWithRespectToBias
+            # We could iterate over all xs and do it one by one, but I think it is equivalent to summing the moment2 for all xs and updating the bias at once
+            moment2Bias=np.dot(beta2*moment2Bias+(1-beta2),gradientWithRespectToBias*gradientWithRespectToBias)
 
             mhatBias = moment1Bias/(1-beta1**i)
             vhatBias = moment2Bias/(1-beta2**i)
 
             self.bias = self.bias-self.learningRate*mhatBias/(np.sqrt(vhatBias)+epsilon)
-            
+
+    def fitIwls(self,X,y):
+        pass           
