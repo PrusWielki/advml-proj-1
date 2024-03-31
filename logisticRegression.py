@@ -6,7 +6,7 @@ class Optimizer(Enum):
     Adam=2
     IWLS=3
 class LogisticRegression:
-    def __init__(self, noOfIterations: int=1000, learningRate: float=0.001, optimizer: Optimizer=Optimizer.SGD, convError=0.0001):
+    def __init__(self, noOfIterations: int=1000, learningRate: float=0.001, optimizer: Optimizer=Optimizer.SGD, convError=0.00001):
         self.w= []
         self.noOfIterations = noOfIterations
         self.learningRate = learningRate
@@ -17,11 +17,11 @@ class LogisticRegression:
     def fit(self,X,y):
         match self.optimizer:
             case Optimizer.SGD:
-                self.fitSgd(X,y)
+                return self.fitSgd(X,y)
             case Optimizer.Adam:
-                self.fitAdam(X,y)
+                return self.fitAdam(X,y)
             case Optimizer.IWLS:
-                self.fitIwls(X,y)
+                return self.fitIwls(X,y)
             
     def predict(self,X):
         print(self.w)
@@ -60,6 +60,7 @@ class LogisticRegression:
             if i>0 and (np.abs(self.costs[-1]-self.costs[-2])<self.convError):
                 print("Converged after "+str(i)+" iterations")
                 break
+        return self.costs
     def fitAdam(self,X,y):
 
         # 1. Init values
@@ -111,7 +112,7 @@ class LogisticRegression:
             if i>1 and (np.abs(self.costs[-1]-self.costs[-2])<self.convError):
                 print("Converged after "+str(i)+" iterations")
                 break
-
+        return self.costs
     def fitIwls(self,X,y):
         self.w = np.zeros(X.shape[1])
         self.costs=[]
@@ -131,3 +132,4 @@ class LogisticRegression:
             if i>1 and (np.abs(self.costs[-1]-self.costs[-2])<self.convError):
                 print("Converged after "+str(i)+" iterations")
                 break
+        return self.costs
