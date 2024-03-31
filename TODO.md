@@ -1,4 +1,3 @@
-- [ ] Finish IWLs
 - [ ] Add interactions between variables
 - [ ] Task 3
 - [ ] Report
