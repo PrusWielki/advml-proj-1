@@ -24,7 +24,6 @@ class LogisticRegression:
                 return self.fitIwls(X,y)
             
     def predict(self,X):
-        print(self.w)
         predicted  = 1/(1+np.exp(-(np.dot(X,self.w).astype(float) +self.bias)).astype(float))
         predictedClasses = []
         for x in predicted:
