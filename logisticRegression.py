@@ -6,12 +6,13 @@ class Optimizer(Enum):
     Adam=2
     IWLS=3
 class LogisticRegression:
-    def __init__(self, noOfIterations: int=1000, learningRate: float=0.001, optimizer: Optimizer=Optimizer.SGD):
+    def __init__(self, noOfIterations: int=1000, learningRate: float=0.001, optimizer: Optimizer=Optimizer.SGD, convError=0.0001):
         self.w= []
         self.noOfIterations = noOfIterations
         self.learningRate = learningRate
         self.costs=[]
         self.optimizer = optimizer
+        self.convError = convError
         
     def fit(self,X,y):
         match self.optimizer:
@@ -48,12 +49,17 @@ class LogisticRegression:
             # cost function (cross entropy loss)
             self.costs.append((-1/X.shape[0])*(np.dot(y,np.log(yHat))+np.dot((1-y),np.log(1-yHat))))
             
+            
+
             # update weights
             weightChange = (1/X.shape[0])*np.dot(X.T,(yHat-y))
             biasChange = (1/X.shape[0]) * np.sum(yHat-y)
 
             self.w = self.w+self.learningRate*weightChange
             self.bias=self.bias+self.learningRate*biasChange
+            if i>0 and (np.abs(self.costs[-1]-self.costs[-2])<self.convError):
+                print("Converged after "+str(i)+" iterations")
+                break
     def fitAdam(self,X,y):
 
         # 1. Init values
@@ -102,6 +108,9 @@ class LogisticRegression:
             vhatBias = moment2Bias/(1.0-beta2**i)
 
             self.bias = self.bias-self.learningRate*mhatBias/(np.sqrt(vhatBias)+epsilon)
+            if i>1 and (np.abs(self.costs[-1]-self.costs[-2])<self.convError):
+                print("Converged after "+str(i)+" iterations")
+                break
 
     def fitIwls(self,X,y):
         self.w = np.zeros(X.shape[1])
@@ -119,3 +128,6 @@ class LogisticRegression:
             z = a+ np.dot(np.linalg.inv(W),y-yHat)
             # (np.divide((y-yHat),pp,out=np.zeros_like(pp),where=pp!=0))
             self.w=np.dot(np.dot(np.dot(np.linalg.inv(np.dot(np.dot(X.T,W),X)),X.T),W),z)
+            if i>1 and (np.abs(self.costs[-1]-self.costs[-2])<self.convError):
+                print("Converged after "+str(i)+" iterations")
+                break
