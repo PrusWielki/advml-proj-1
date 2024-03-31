@@ -6,13 +6,14 @@ class Optimizer(Enum):
     Adam=2
     IWLS=3
 class LogisticRegression:
-    def __init__(self, noOfIterations: int=1000, learningRate: float=0.001, optimizer: Optimizer=Optimizer.SGD, convError=0.00001):
+    def __init__(self, noOfIterations: int=1000, learningRate: float=0.001, optimizer: Optimizer=Optimizer.SGD, convError=0.00001, batchSize=64):
         self.w= []
         self.noOfIterations = noOfIterations
         self.learningRate = learningRate
         self.costs=[]
         self.optimizer = optimizer
         self.convError = convError
+        self.batchSize=batchSize
         
     def fit(self,X,y):
         match self.optimizer:
@@ -41,21 +42,23 @@ class LogisticRegression:
         self.costs=[]
         for i in range(self.noOfIterations):
             
-            a = np.dot(X,self.w) +self.bias
-            a=a.astype(float)
-            yHat=1/(1+np.exp(-a))
 
-            # cost function (cross entropy loss)
-            self.costs.append((-1/X.shape[0])*(np.dot(y,np.log(yHat))+np.dot((1-y),np.log(1-yHat))))
-            
-            
+            for j in range(0,X.shape[0],self.batchSize):
+                currentX = X[i:i+self.batchSize]
+                currentY = y[i:i+self.batchSize]
 
-            # update weights
-            weightChange = (1/X.shape[0])*np.dot(X.T,(yHat-y))
-            biasChange = (1/X.shape[0]) * np.sum(yHat-y)
+                a = np.dot(currentX,self.w) +self.bias
+                a=a.astype(float)
+                yHat=1/(1+np.exp(-a))
 
-            self.w = self.w+self.learningRate*weightChange
-            self.bias=self.bias+self.learningRate*biasChange
+
+               # update weights
+                weightChange = (1/currentX.shape[0])*np.dot(currentX.T,(yHat-currentY))
+                biasChange = (1/currentX.shape[0]) * np.sum(yHat-currentY)
+
+                self.w = self.w+self.learningRate*weightChange
+                self.bias=self.bias+self.learningRate*biasChange
+            self.costs.append((-1/X.shape[0])*(np.dot(currentY,np.log(yHat))+np.dot((1-currentY),np.log(1-yHat))))
             if i>0 and (np.abs(self.costs[-1]-self.costs[-2])<self.convError):
                 print("Converged after "+str(i)+" iterations")
                 break
