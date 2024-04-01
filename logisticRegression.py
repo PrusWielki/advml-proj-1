@@ -135,7 +135,7 @@ class LogisticRegression:
             W = np.diag(pp)
             z = a+ np.dot(np.linalg.inv(W),y-yHat)
             # (np.divide((y-yHat),pp,out=np.zeros_like(pp),where=pp!=0))
-            self.w=np.dot(np.dot(np.dot(np.linalg.inv(np.dot(np.dot(X.T,W),X)),X.T),W),z)
+            self.w=np.dot(np.dot(np.dot(np.linalg.pinv(np.dot(np.dot(X.T,W),X)),X.T),W),z)
             if i>1 and (np.abs(self.costs[-1]-self.costs[-2])<self.convError):
                 print("Converged after "+str(i)+" iterations")
                 break
