@@ -1,3 +1,3 @@
-- [ ] Add interactions between variables
+- [ ] Fix sgd, it doesn't seem to converge
 - [ ] Task 3
 - [ ] Report

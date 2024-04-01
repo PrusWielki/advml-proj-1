@@ -6,24 +6,25 @@ class Optimizer(Enum):
     Adam=2
     IWLS=3
 class LogisticRegression:
-    def __init__(self, noOfIterations: int=1000, learningRate: float=0.001, optimizer: Optimizer=Optimizer.SGD):
+    def __init__(self, noOfIterations: int=1000, learningRate: float=0.001, optimizer: Optimizer=Optimizer.SGD, convError=0.00001, batchSize=64):
         self.w= []
         self.noOfIterations = noOfIterations
         self.learningRate = learningRate
         self.costs=[]
         self.optimizer = optimizer
+        self.convError = convError
+        self.batchSize=batchSize
         
     def fit(self,X,y):
         match self.optimizer:
             case Optimizer.SGD:
-                self.fitSgd(X,y)
+                return self.fitSgd(X,y)
             case Optimizer.Adam:
-                self.fitAdam(X,y)
+                return self.fitAdam(X,y)
             case Optimizer.IWLS:
-                self.fitIwls(X,y)
+                return self.fitIwls(X,y)
             
     def predict(self,X):
-        print(self.w)
         predicted  = 1/(1+np.exp(-(np.dot(X,self.w).astype(float) +self.bias)).astype(float))
         predictedClasses = []
         for x in predicted:
@@ -40,20 +41,33 @@ class LogisticRegression:
         self.bias=0
         self.costs=[]
         for i in range(self.noOfIterations):
-            
+            p = np.random.permutation(len(X))
+            shuffledX = X[p]
+            shuffledY=y[p]
+
+            for j in range(0,X.shape[0],self.batchSize):
+                currentX = shuffledX[i:i+self.batchSize]
+                currentY = shuffledY[i:i+self.batchSize]
+
+                a = np.dot(currentX,self.w) +self.bias
+                a=a.astype(float)
+                yHat=1/(1+np.exp(-a))
+
+
+               # update weights
+                weightChange = (1/currentX.shape[0])*np.dot(currentX.T,(yHat-currentY))
+                biasChange = (1/currentX.shape[0]) * np.sum(yHat-currentY)
+
+                self.w = self.w-self.learningRate*weightChange
+                self.bias=self.bias-self.learningRate*biasChange
             a = np.dot(X,self.w) +self.bias
             a=a.astype(float)
             yHat=1/(1+np.exp(-a))
-
-            # cost function (cross entropy loss)
             self.costs.append((-1/X.shape[0])*(np.dot(y,np.log(yHat))+np.dot((1-y),np.log(1-yHat))))
-            
-            # update weights
-            weightChange = (1/X.shape[0])*np.dot(X.T,(yHat-y))
-            biasChange = (1/X.shape[0]) * np.sum(yHat-y)
-
-            self.w = self.w+self.learningRate*weightChange
-            self.bias=self.bias+self.learningRate*biasChange
+            if i>0 and (np.abs(self.costs[-1]-self.costs[-2])<self.convError):
+                print("Converged after "+str(i)+" iterations")
+                break
+        return self.costs
     def fitAdam(self,X,y):
 
         # 1. Init values
@@ -102,7 +116,10 @@ class LogisticRegression:
             vhatBias = moment2Bias/(1.0-beta2**i)
 
             self.bias = self.bias-self.learningRate*mhatBias/(np.sqrt(vhatBias)+epsilon)
-
+            if i>1 and (np.abs(self.costs[-1]-self.costs[-2])<self.convError):
+                print("Converged after "+str(i)+" iterations")
+                break
+        return self.costs
     def fitIwls(self,X,y):
         self.w = np.zeros(X.shape[1])
         self.costs=[]
@@ -118,4 +135,8 @@ class LogisticRegression:
             W = np.diag(pp)
             z = a+ np.dot(np.linalg.inv(W),y-yHat)
             # (np.divide((y-yHat),pp,out=np.zeros_like(pp),where=pp!=0))
-            self.w=np.dot(np.dot(np.dot(np.linalg.inv(np.dot(np.dot(X.T,W),X)),X.T),W),z)
+            self.w=np.dot(np.dot(np.dot(np.linalg.pinv(np.dot(np.dot(X.T,W),X)),X.T),W),z)
+            if i>1 and (np.abs(self.costs[-1]-self.costs[-2])<self.convError):
+                print("Converged after "+str(i)+" iterations")
+                break
+        return self.costs
