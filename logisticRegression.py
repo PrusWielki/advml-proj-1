@@ -41,11 +41,13 @@ class LogisticRegression:
         self.bias=0
         self.costs=[]
         for i in range(self.noOfIterations):
-            
+            p = np.random.permutation(len(X))
+            shuffledX = X[p]
+            shuffledY=y[p]
 
             for j in range(0,X.shape[0],self.batchSize):
-                currentX = X[i:i+self.batchSize]
-                currentY = y[i:i+self.batchSize]
+                currentX = shuffledX[i:i+self.batchSize]
+                currentY = shuffledY[i:i+self.batchSize]
 
                 a = np.dot(currentX,self.w) +self.bias
                 a=a.astype(float)
@@ -56,9 +58,12 @@ class LogisticRegression:
                 weightChange = (1/currentX.shape[0])*np.dot(currentX.T,(yHat-currentY))
                 biasChange = (1/currentX.shape[0]) * np.sum(yHat-currentY)
 
-                self.w = self.w+self.learningRate*weightChange
-                self.bias=self.bias+self.learningRate*biasChange
-            self.costs.append((-1/X.shape[0])*(np.dot(currentY,np.log(yHat))+np.dot((1-currentY),np.log(1-yHat))))
+                self.w = self.w-self.learningRate*weightChange
+                self.bias=self.bias-self.learningRate*biasChange
+            a = np.dot(X,self.w) +self.bias
+            a=a.astype(float)
+            yHat=1/(1+np.exp(-a))
+            self.costs.append((-1/X.shape[0])*(np.dot(y,np.log(yHat))+np.dot((1-y),np.log(1-yHat))))
             if i>0 and (np.abs(self.costs[-1]-self.costs[-2])<self.convError):
                 print("Converged after "+str(i)+" iterations")
                 break
