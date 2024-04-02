@@ -6,7 +6,7 @@ class Optimizer(Enum):
     Adam=2
     IWLS=3
 class LogisticRegression:
-    def __init__(self, noOfIterations: int=1000, learningRate: float=0.001, optimizer: Optimizer=Optimizer.SGD, convError=0.00001, batchSize=64):
+    def __init__(self, noOfIterations: int=1000, learningRate: float=0.001, optimizer: Optimizer=Optimizer.SGD, convError=0.00001, batchSize=64, printInfo=True):
         self.w= []
         self.noOfIterations = noOfIterations
         self.learningRate = learningRate
@@ -14,6 +14,7 @@ class LogisticRegression:
         self.optimizer = optimizer
         self.convError = convError
         self.batchSize=batchSize
+        self.printInfo=printInfo
         
     def fit(self,X,y):
         match self.optimizer:
@@ -37,8 +38,8 @@ class LogisticRegression:
     
     def fitSgd(self, X,y):
         # Initializing with weights 0 and 0 bias
-        self.w = np.zeros(X.shape[1])
-        self.bias=0
+        self.w = np.zeros(X.shape[1],dtype=np.float64)
+        self.bias=np.float64(0)
         self.costs=[]
         for i in range(self.noOfIterations):
             p = np.random.permutation(len(X))
@@ -48,24 +49,28 @@ class LogisticRegression:
             for j in range(0,X.shape[0],self.batchSize):
                 currentX = shuffledX[i:i+self.batchSize]
                 currentY = shuffledY[i:i+self.batchSize]
+                if(currentX.shape[0]<=0 or currentY.shape[0]<=0):
+                    continue
 
-                a = np.dot(currentX,self.w) +self.bias
-                a=a.astype(float)
-                yHat=1/(1+np.exp(-a))
+
+                a = np.float64(np.dot(currentX,self.w) +self.bias)
+                yHat=np.float64(1/(1+np.exp(-a)))
 
 
                # update weights
-                weightChange = (1/currentX.shape[0])*np.dot(currentX.T,(yHat-currentY))
-                biasChange = (1/currentX.shape[0]) * np.sum(yHat-currentY)
+                weightChange =np.float64((1/currentX.shape[0])*np.dot(currentX.T,(yHat-currentY)))
+                biasChange = np.float64((1/currentX.shape[0]) * np.sum(yHat-currentY))
 
-                self.w = self.w-self.learningRate*weightChange
-                self.bias=self.bias-self.learningRate*biasChange
-            a = np.dot(X,self.w) +self.bias
-            a=a.astype(float)
-            yHat=1/(1+np.exp(-a))
+                self.w = np.float64(self.w-self.learningRate*weightChange)
+                self.bias=np.float64(self.bias-self.learningRate*biasChange)
+            a = np.float64(np.dot(X,self.w) +self.bias)
+            yHat=np.float64(1/(1+np.exp(-a)))
+            yHat[yHat==1]=1-1e-08
+            yHat[yHat==0]=1e-08
             self.costs.append((-1/X.shape[0])*(np.dot(y,np.log(yHat))+np.dot((1-y),np.log(1-yHat))))
             if i>0 and (np.abs(self.costs[-1]-self.costs[-2])<self.convError):
-                print("Converged after "+str(i)+" iterations")
+                if self.printInfo==True:
+                    print("SGD Converged after "+str(i)+" iterations")
                 break
         return self.costs
     def fitAdam(self,X,y):
@@ -94,6 +99,8 @@ class LogisticRegression:
             yHat=1.0/(1.0+np.exp(-a))
 
             # cost function (cross entropy loss)
+            yHat[yHat==1]=1-1e-08
+            yHat[yHat==0]=1e-08
             self.costs.append((-1.0/X.shape[0])*(np.dot(y,np.log(yHat))+np.dot((1.0-y),np.log(1.0-yHat))))
             
             # Calculate gradient of cross entropy with respect to weights and bias
@@ -112,12 +119,13 @@ class LogisticRegression:
             # We could iterate over all xs and do it one by one, but I think it is equivalent to summing the moment2 for all xs and updating the bias at once
             moment2Bias=np.dot(beta2*moment2Bias+(1.0-beta2),gradientWithRespectToBias*gradientWithRespectToBias)
 
-            mhatBias = moment1Bias/(1.0-beta1**i)
-            vhatBias = moment2Bias/(1.0-beta2**i)
+            mhatBias = float(moment1Bias)/(1.0-float(beta1**i))
+            vhatBias = float(moment2Bias)/(1.0-float(beta2**i))
 
             self.bias = self.bias-self.learningRate*mhatBias/(np.sqrt(vhatBias)+epsilon)
             if i>1 and (np.abs(self.costs[-1]-self.costs[-2])<self.convError):
-                print("Converged after "+str(i)+" iterations")
+                if self.printInfo==True:
+                    print("Adam Converged after "+str(i)+" iterations")
                 break
         return self.costs
     def fitIwls(self,X,y):
@@ -128,15 +136,17 @@ class LogisticRegression:
             a = np.dot(X,self.w) 
             a=a.astype(float)
             yHat=1.0/(1.0+np.exp(-a))
+
             self.costs.append((-1.0/X.shape[0])*(np.dot(y,np.log(yHat,out=np.zeros_like(yHat), where=(yHat!=0)))+np.dot((1.0-y),np.log(1.0-yHat,out=np.zeros_like(yHat), where=(yHat!=1)))))
             # using formula from lecture slides (X^TWX )^−1X^TWz
             # z = X βold + W^−1(y − p), Beta being weights
             pp=yHat*(1-yHat)
             W = np.diag(pp)
-            z = a+ np.dot(np.linalg.inv(W),y-yHat)
+            z = a+ np.dot(np.linalg.pinv(W),y-yHat)
             # (np.divide((y-yHat),pp,out=np.zeros_like(pp),where=pp!=0))
             self.w=np.dot(np.dot(np.dot(np.linalg.pinv(np.dot(np.dot(X.T,W),X)),X.T),W),z)
             if i>1 and (np.abs(self.costs[-1]-self.costs[-2])<self.convError):
-                print("Converged after "+str(i)+" iterations")
+                if self.printInfo==True:
+                    print("IWLS Converged after "+str(i)+" iterations")
                 break
         return self.costs
