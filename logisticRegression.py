@@ -119,7 +119,7 @@ class LogisticRegression:
             # We could iterate over all xs and do it one by one, but I think it is equivalent to summing the moment2 for all xs and updating the bias at once
             moment2Bias=np.dot(beta2*moment2Bias+(1.0-beta2),gradientWithRespectToBias*gradientWithRespectToBias)
 
-            mhatBias = moment1Bias/(1.0-beta1**i)
+            mhatBias = float(moment1Bias)/(1.0-float(beta1**i))
             vhatBias = float(moment2Bias)/(1.0-float(beta2**i))
 
             self.bias = self.bias-self.learningRate*mhatBias/(np.sqrt(vhatBias)+epsilon)
