@@ -103,9 +103,6 @@ class LogisticRegression:
             yHat[yHat==0]=1e-08
             self.costs.append((-1.0/X.shape[0])*(np.dot(y,np.log(yHat))+np.dot((1.0-y),np.log(1.0-yHat))))
             
-            # Calculate gradient of cross entropy with respect to weights and bias
-            # From what I understand the gradient is simply y predicted - y but in this article https://medium.com/analytics-vidhya/implementing-logistic-regression-with-sgd-from-scratch-5e46c1c54c35
-            # they claim that gradient with respect to weights should be x(y-y_pred) and with respect to bias: y- ypred
             gradientWithRespectToWeights=np.dot(X.T,yHat-y)
             gradientWithRespectToBias = np.sum(yHat-y)
             moment1Weights=beta1*moment1Weights+(1-beta1)*gradientWithRespectToWeights
@@ -116,7 +113,6 @@ class LogisticRegression:
             self.w = self.w-self.learningRate*mhatWeights/(np.sqrt(vhatWeights)+epsilon)
 
             moment1Bias=beta1*moment1Bias+(1.0-beta1)*gradientWithRespectToBias
-            # We could iterate over all xs and do it one by one, but I think it is equivalent to summing the moment2 for all xs and updating the bias at once
             moment2Bias=np.dot(beta2*moment2Bias+(1.0-beta2),gradientWithRespectToBias*gradientWithRespectToBias)
 
             mhatBias = float(moment1Bias)/(1.0-float(beta1**i))
